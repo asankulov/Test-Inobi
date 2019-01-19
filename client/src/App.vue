@@ -1,28 +1,296 @@
 <template>
-  <div id="app">
-    <img alt="Vue logo" src="./assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
-  </div>
+  <v-app>
+    <v-toolbar dark color="primary">
+      <v-toolbar-title class="white--text">{{ title }}</v-toolbar-title>
+      <v-spacer></v-spacer>
+    </v-toolbar>
+    <v-content>
+      <v-container grid-list-md>
+        <v-alert
+          v-model="formHasErrors"
+          dismissible
+          type="error"
+        >
+          Заполните поля корректными данными!
+        </v-alert>
+        <v-alert
+          v-model="alert"
+          dismissible
+          type="error"
+        >
+           Что-то пошло не так!
+        </v-alert>
+        <v-flex xs12 class="text-xs-center text-sm-center text-md-center text-lg-center">
+          <v-text-field label="Выбрать Картинку" @click='pickFile' v-model='imageName'
+                        prepend-icon='attach_file' readonly></v-text-field>
+          <input
+            type="file"
+            style="display: none"
+            ref="image"
+            accept="image/jpeg, image/png"
+            @change="onFilePicked"
+          >
+        </v-flex>
+        <v-layout v-if="this.imageFile !== ''" align-center row justify-start full-height>
+          <v-flex xs3>
+            <v-text-field label="Горизонтальное соотношение"
+                          v-model="horizontalRatio"
+                          outline
+                          clearable
+                          mask="########"
+                          validate-on-blur
+                          ref="horizontalRatio"
+                          :rules="[
+                          () => !!horizontalRatio || 'Это поле обязательно',
+                          () => !!horizontalRatio && horizontalRatio > 0 || 'Значение должно быть больше 0',
+                          () => !!horizontalRatio && horizontalRatio <= originalSize.w || 'Значение не должно быть больше оригинальной ширины'
+                          ]"
+            >
+            </v-text-field>
+          </v-flex>
+          <v-flex xs3>
+            <v-text-field label="Вертикальное соотношение"
+                          v-model="verticalRatio"
+                          outline
+                          clearable
+                          mask="########"
+                          validate-on-blur
+                          ref="verticalRatio"
+                          :rules="[
+                          () => !!verticalRatio || 'Это поле обязательно',
+                          () => !!verticalRatio && verticalRatio > 0 || 'Значение должно быть больше 0',
+                          () => !!verticalRatio && verticalRatio <= originalSize.h || 'Значение не должно быть больше оригинальной высоты'
+                          ]"
+            >
+            </v-text-field>
+          </v-flex>
+        </v-layout>
+        <v-layout v-if="this.imageFile !== ''" align-center justify-end row>
+          <v-flex>
+            <v-btn
+              :loading="reactiveLoader"
+              :disabled="reactiveLoader"
+              color="blue-grey"
+              class="white--text"
+              @click="upload"
+            >
+              Поделить картинку
+              <v-icon right dark>cloud_upload</v-icon>
+            </v-btn>
+          </v-flex>
+        </v-layout>
+        <v-layout v-if="resData !== null" align-center justify-center row fill-height wrap>
+          <v-list>
+            <v-list-tile
+              v-for="item in images"
+              :key="item"
+              avatar
+            >
+              <v-list-tile-content>
+                <v-list-tile-title v-html="item"></v-list-tile-title>
+              </v-list-tile-content>
+
+              <v-list-tile-avatar>
+                <img :alt="item" :src="`${proxyServer}/uploads/${dirname}/${item}`">
+              </v-list-tile-avatar>
+
+
+                <v-list-tile-action>
+                  <a style="margin-right: inherit; text-decoration: none;" :href="`${proxyServer}/download/${dirname}/${item}`">
+                    <v-icon color="primary">archive</v-icon>
+                  </a>
+                </v-list-tile-action>
+            </v-list-tile>
+          </v-list>
+          <v-flex offset-xs1 xs2>
+            <h2>ИЛИ</h2>
+          </v-flex>
+          <v-flex xs2>
+            <v-btn
+              color="primary"
+              class="white--text"
+              :href="`${proxyServer}/download/${dirname}`"
+            >
+              Скачать все разом
+              <v-icon right dark>archive</v-icon>
+            </v-btn>
+          </v-flex>
+        </v-layout>
+      </v-container>
+    </v-content>
+  </v-app>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+  import axios from 'axios';
 
-export default {
-  name: 'app',
-  components: {
-    HelloWorld
+  function getImageSize(file) {
+    return new Promise(((resolve, reject) => {
+      if (file) {
+        let img = new Image();
+        img.src = URL.createObjectURL(file);
+        img.onload = () => {
+          let width = img.naturalWidth;
+          let  height = img.naturalHeight;
+          URL.revokeObjectURL(img.src);
+          resolve({height, width})
+        };
+      } else {
+        reject('File Is Not Defined!')
+      }
+    }))
   }
-}
-</script>
 
+  export default {
+    name: 'App',
+    data: () => ({
+      proxyServer: 'http://localhost:5000',
+      title: "Работа с картинками 😎😎",
+      dialog: false,
+      imageName: '',
+      imageUrl: '',
+      imageFile: '',
+      loader: null,
+      loading: false,
+      horizontalRatio: 3,
+      verticalRatio: 3,
+      originalSize: {
+        w: 0,
+        h: 0
+      },
+      errorMessages: '',
+      formHasErrors: false,
+      alert: false,
+      resData: null
+    }),
+    computed: {
+      form () {
+        return {
+          horizontalRatio: this.horizontalRatio,
+          verticalRatio: this.verticalRatio
+        }
+      },
+      reactiveLoader() {
+        return this.loader
+      },
+      images() {
+        return this.resData.files.sort()
+      },
+      dirname() {
+        return this.resData.dirname
+      }
+    },
+    methods: {
+      pickFile() {
+        this.$refs.image.click()
+      },
+      onFilePicked(e) {
+        const files = e.target.files;
+        if (files[0] !== undefined) {
+          this.imageName = files[0].name;
+          if (this.imageName.lastIndexOf('.') <= 0) {
+            return
+          }
+          const fr = new FileReader();
+          fr.readAsDataURL(files[0]);
+          fr.addEventListener('load', () => {
+            this.imageUrl = fr.result;
+            this.imageFile = files[0];
+            getImageSize(this.imageFile)
+              .then(({width, height}) => {
+                this.originalSize.w = width;
+                this.originalSize.h = height;
+              })
+              .catch(e => {
+                console.log(e)
+              })
+          })
+        } else {
+          this.imageName = '';
+          this.imageFile = '';
+          this.imageUrl = '';
+        }
+      },
+      upload() {
+        this.validate();
+        if(this.formHasErrors) {
+          return
+        }
+        this.loader = true;
+        const formData = new FormData();
+        formData.append('image', this.imageFile);
+        axios.post(`${this.proxyServer}/chop/${this.horizontalRatio}x${this.verticalRatio}`, formData)
+          .then(res => {
+            this.resData = Object.assign({}, res.data);
+            this.loader = false;
+            this.imageFile = ''
+          })
+          .catch(e => {
+            console.log(e);
+            this.alert = true;
+            this.loader = false;
+          })
+      },
+      validate() {
+        this.formHasErrors = false;
+        Object.keys(this.form).forEach(f => {
+          if (!this.form[f] || this.form[f] <= 0) {
+            this.formHasErrors = true;
+          }
+          this.$refs[f].validate(true)
+        });
+        if(this.form.horizontalRatio > this.originalSize.h || this.form.verticalRatio > this.originalSize.w) {
+          this.formHasErrors = true;
+        }
+      },
+      download(filePath=this.resData.dirname) {
+        axios.get(`${this.proxyServer}/download`, {
+          data: {
+            file_path: filePath
+          }
+        })
+          .then(res => {
+            console.log(res)
+          })
+      }
+    }
+  }
+</script>
 <style>
-#app {
-  font-family: 'Avenir', Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
+  .custom-loader {
+    animation: loader 1s infinite;
+    display: flex;
+  }
+  @-moz-keyframes loader {
+    from {
+      transform: rotate(0);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @-webkit-keyframes loader {
+    from {
+      transform: rotate(0);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @-o-keyframes loader {
+    from {
+      transform: rotate(0);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes loader {
+    from {
+      transform: rotate(0);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
 </style>
