@@ -6,32 +6,36 @@
     </v-toolbar>
     <v-content>
       <v-container grid-list-md>
-        <v-alert
-          v-model="formHasErrors"
-          dismissible
-          type="error"
-        >
-          Заполните поля корректными данными!
-        </v-alert>
-        <v-alert
-          v-model="alert"
-          dismissible
-          type="error"
-        >
-           Что-то пошло не так!
-        </v-alert>
-        <v-flex xs12 class="text-xs-center text-sm-center text-md-center text-lg-center">
-          <v-text-field label="Выбрать Картинку" @click='pickFile' v-model='imageName'
-                        prepend-icon='attach_file' readonly></v-text-field>
-          <input
-            type="file"
-            style="display: none"
-            ref="image"
-            accept="image/jpeg, image/png"
-            @change="onFilePicked"
+        <v-layout align-center row justify-start full-height>
+          <v-alert
+            v-model="alert"
+            dismissible
+            type="error"
           >
-        </v-flex>
-        <v-layout v-if="this.imageFile !== ''" align-center row justify-start full-height>
+            Что-то пошло не так!
+          </v-alert>
+          <v-alert
+            v-model="formHasErrors"
+            dismissible
+            type="error"
+          >
+            Заполните поля корректными данными!
+          </v-alert>
+        </v-layout>
+        <v-layout align-center row justify-start>
+          <v-flex xs6 class="text-xs-center text-sm-center text-md-center text-lg-center">
+            <v-text-field label="Выбрать Картинку" @click='pickFile' v-model='imageName'
+                          prepend-icon='attach_file' readonly></v-text-field>
+            <input
+              type="file"
+              style="display: none"
+              ref="image"
+              accept="image/jpeg, image/png"
+              @change="onFilePicked"
+            >
+          </v-flex>
+        </v-layout>
+        <v-layout v-if="this.imageFile !== ''" align-start row justify-start>
           <v-flex xs3>
             <v-text-field label="Горизонтальное соотношение"
                           v-model="horizontalRatio"
@@ -64,22 +68,21 @@
             >
             </v-text-field>
           </v-flex>
-        </v-layout>
-        <v-layout v-if="this.imageFile !== ''" align-center justify-end row>
-          <v-flex>
+          <v-flex xs3>
             <v-btn
               :loading="reactiveLoader"
               :disabled="reactiveLoader"
-              color="blue-grey"
+              color="primary"
               class="white--text"
               @click="upload"
+              large
             >
               Поделить картинку
               <v-icon right dark>cloud_upload</v-icon>
             </v-btn>
           </v-flex>
         </v-layout>
-        <v-layout v-if="resData !== null" align-center justify-center row fill-height wrap>
+        <v-layout v-if="resData !== null" align-center justify-center row>
           <v-list>
             <v-list-tile
               v-for="item in images"
@@ -105,14 +108,24 @@
           <v-flex offset-xs1 xs2>
             <h2>ИЛИ</h2>
           </v-flex>
-          <v-flex xs2>
+          <v-flex xs3>
             <v-btn
+              block
               color="primary"
               class="white--text"
               :href="`${proxyServer}/download/${dirname}`"
             >
               Скачать все разом
               <v-icon right dark>archive</v-icon>
+            </v-btn>
+            <v-btn
+              block
+              color="error"
+              class="white--text"
+              @click="clear"
+            >
+              Очистить
+              <v-icon right dark>autorenew</v-icon>
             </v-btn>
           </v-flex>
         </v-layout>
@@ -206,9 +219,7 @@
               })
           })
         } else {
-          this.imageName = '';
-          this.imageFile = '';
-          this.imageUrl = '';
+          this.clear();
         }
       },
       upload() {
@@ -219,7 +230,7 @@
         this.loader = true;
         const formData = new FormData();
         formData.append('image', this.imageFile);
-        axios.post(`${this.proxyServer}/chop/${this.horizontalRatio}x${this.verticalRatio}`, formData)
+        axios.post(`${this.proxyServer}/split/${this.horizontalRatio}x${this.verticalRatio}`, formData)
           .then(res => {
             this.resData = Object.assign({}, res.data);
             this.loader = false;
@@ -243,15 +254,11 @@
           this.formHasErrors = true;
         }
       },
-      download(filePath=this.resData.dirname) {
-        axios.get(`${this.proxyServer}/download`, {
-          data: {
-            file_path: filePath
-          }
-        })
-          .then(res => {
-            console.log(res)
-          })
+      clear() {
+        this.resData = null;
+        this.imageName = '';
+        this.imageFile = '';
+        this.imageUrl = '';
       }
     }
   }
