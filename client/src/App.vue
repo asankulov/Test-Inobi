@@ -6,21 +6,25 @@
     </v-toolbar>
     <v-content>
       <v-container grid-list-md>
-        <v-layout align-center row justify-start full-height>
-          <v-alert
-            v-model="alert"
-            dismissible
-            type="error"
-          >
-            Что-то пошло не так!
-          </v-alert>
-          <v-alert
-            v-model="formHasErrors"
-            dismissible
-            type="error"
-          >
-            Заполните поля корректными данными!
-          </v-alert>
+        <v-layout align-center justify-center full-height>
+          <v-flex xs12>
+            <v-alert
+              v-model="alert"
+              dismissible
+              type="error"
+            >
+              Что-то пошло не так!
+            </v-alert>
+          </v-flex>
+          <v-flex xs12>
+            <v-alert
+              v-model="formHasErrors"
+              dismissible
+              type="error"
+            >
+              Заполните поля корректными данными!
+            </v-alert>
+          </v-flex>
         </v-layout>
         <v-layout align-center row justify-start>
           <v-flex xs6 class="text-xs-center text-sm-center text-md-center text-lg-center">

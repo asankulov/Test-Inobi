@@ -4,7 +4,7 @@ from time import time
 from zipfile import ZipFile, ZIP_DEFLATED
 
 
-def chop_image_from_path(file_path, matrix):
+def split_image(file_path, matrix):
     dirname, file_extension = os.path.splitext(file_path)
     os.mkdir(dirname)
 

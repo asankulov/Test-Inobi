@@ -1,0 +1,36 @@
+version: "3"
+
+services:
+  flask:
+    build: ./server
+    restart: on-failure
+    volumes:
+      - uploads:/usr/src/app/uploads
+    networks:
+      - proxy-server
+
+  vue:
+    build: ./client
+    restart: on-failure
+    volumes:
+      - static:/usr/src/app/dist
+
+  nginx:
+    build: ./nginx
+    ports:
+      - "5000:80"
+    restart: on-failure
+    volumes:
+      - uploads:/usr/share/nginx/uploads
+      - static:/usr/share/nginx/html
+    depends_on:
+      - vue
+      - flask
+    networks:
+      - proxy-server
+
+volumes:
+  uploads:
+  static:
+networks:
+  proxy-server:
