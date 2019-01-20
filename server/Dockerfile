@@ -2,8 +2,6 @@ FROM python:3.7-slim-stretch
 
 WORKDIR /usr/src/app
 
-EXPOSE 5000
-
 RUN apt-get update
 RUN apt-get install build-essential gcc python-dev -y
 

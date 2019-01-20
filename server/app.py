@@ -3,6 +3,7 @@ from flask_cors import CORS
 from flask_reggie import Reggie
 import os
 from http import HTTPStatus
+import mimetypes
 from decorators import fields_required_for_upload, allowed_mimetypes, save_file_and_get_file_path
 from utils import split_image, create_zip
 
@@ -19,12 +20,17 @@ def download_zip(file_path):
     try:
         if os.path.isdir(file_path):
             zip_file_name = create_zip(file_path)
-            file_res = send_from_directory(app.config['UPLOAD_FOLDER'], zip_file_name, as_attachment=True)
+            file_res = send_from_directory(app.config['UPLOAD_FOLDER'],
+                                           zip_file_name,
+                                           as_attachment=True,
+                                           mimetype=mimetypes.types_map['.zip'])
             os.remove(zip_file_name)
             return file_res
         elif os.path.isfile(file_path):
-            print(os.path.exists(file_path))
-            return send_from_directory(app.config['UPLOAD_FOLDER'], file_path, as_attachment=True)
+            return send_from_directory(app.config['UPLOAD_FOLDER'],
+                                       file_path,
+                                       as_attachment=True,
+                                       mimetype=mimetypes.types_map[os.path.splitext(file_path)[-1]])
         else:
             json_res = jsonify({'message': 'Unknown path!'})
             json_res.status_code = HTTPStatus.BAD_REQUEST
@@ -63,4 +69,4 @@ def split(matrix, uploaded_file_path, timestamp):
 
 
 if __name__ == '__main__':
-    app.run('0.0.0.0')
+    app.run()

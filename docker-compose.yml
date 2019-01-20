@@ -4,6 +4,8 @@ services:
   flask:
     build: ./server
     restart: on-failure
+    ports:
+      - "5000"
     volumes:
       - uploads:/usr/src/app/uploads
     networks:
@@ -17,9 +19,9 @@ services:
 
   nginx:
     build: ./nginx
+    restart: on-failure
     ports:
       - "5000:80"
-    restart: on-failure
     volumes:
       - uploads:/usr/share/nginx/uploads
       - static:/usr/share/nginx/html
