@@ -161,7 +161,7 @@
   export default {
     name: 'App',
     data: () => ({
-      proxyServer: 'http://localhost:5000',
+      proxyServer: 'http://localhost',
       title: "Работа с картинками 😎😎",
       dialog: false,
       imageName: '',
